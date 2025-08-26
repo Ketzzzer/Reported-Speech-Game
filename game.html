@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reported Speech Rally Board Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            color: #1e293b;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Custom CSS for the game board */
+        .board-container {
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            width: clamp(300px, 90vw, 800px);
+            aspect-ratio: 1 / 1;
+            border: 8px solid #000000;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            background-color: #e5e7eb;
+        }
+
+        .board-space {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 0.75rem;
+            line-height: 1.25rem;
+            padding: 0.25rem;
+            border: 2px solid #000000;
+            background-color: #ffffff;
+            color: #1f2937;
+            font-weight: 500;
+        }
+
+        .corner-space {
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .special-space {
+            background-color: #fca5a5;
+            color: #7f1d1d;
+            font-weight: bold;
+            font-size: 1rem;
+            border: 4px solid #b91c1c;
+        }
+
+        .start-space {
+            background-color: #86efac;
+            color: #065f46;
+            font-weight: bold;
+            font-size: 1.25rem;
+            border: 4px solid #14532d;
+        }
+
+        .chance-space {
+            background-color: #fbbf24;
+            color: #78350f;
+            font-weight: bold;
+            font-size: 1rem;
+            border: 4px solid #b45309;
+        }
+        
+        .jail-space {
+            background-color: #94a3b8;
+            color: #334155;
+            font-weight: bold;
+            font-size: 1.25rem;
+            border: 4px solid #4b5563;
+        }
+
+        .go-to-jail-space {
+            background-color: #a3a3a3;
+            color: #3f3f46;
+            font-weight: bold;
+            font-size: 1rem;
+            border: 4px solid #52525b;
+        }
+
+        .center-title {
+            grid-column: 2 / 5;
+            grid-row: 2 / 5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f4f8;
+            padding: 1rem;
+        }
+
+        .game-title {
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            color: #374151;
+            line-height: 1.2;
+        }
+
+        .generated-sentence-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 4px dashed #374151;
+            border-radius: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .button-style {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            white-space: nowrap;
+        }
+
+        .button-style:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .print-btn {
+            background-color: #374151;
+            color: white;
+        }
+
+        .save-btn {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .gemini-btn {
+            background-color: #4f46e5;
+            color: white;
+        }
+
+        .clear-btn {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .status-message {
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        @media print {
+            body {
+                background-color: white;
+                padding: 0;
+            }
+            .button-style, .instructions, h1 {
+                display: none;
+            }
+            .board-container {
+                border: 2px solid black;
+                box-shadow: none;
+            }
+            .board-space {
+                border: 1px solid black;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <h1 class="text-3xl md:text-5xl font-extrabold text-center my-4 md:my-8 text-gray-900 tracking-tight">Reported Speech Rally</h1>
+    <p class="text-center text-lg md:text-xl text-gray-600 mb-6 instructions">A fun way to practice converting sentences!</p>
+
+    <div class="board-container">
+        <!-- Top Row -->
+        <div class="board-space start-space corner-space">START</div>
+        <div class="board-space"></div>
+        <div class="board-space chance-space">CHANCE</div>
+        <div class="board-space"></div>
+        <div class="board-space go-to-jail-space corner-space">GO TO JAIL</div>
+
+        <!-- Middle Rows with Center Title -->
+        <div class="board-space"></div>
+        <div class="center-title" style="grid-column: 2 / 5; grid-row: 2 / 5;">
+            <p class="game-title">Reported Speech Rally</p>
+        </div>
+        <div class="board-space"></div>
+
+        <div class="board-space chance-space">CHANCE</div>
+        <div class="board-space"></div>
+
+        <div class="board-space"></div>
+
+        <!-- Bottom Row -->
+        <div class="board-space jail-space corner-space">JAIL</div>
+        <div class="board-space"></div>
+        <div class="board-space chance-space">CHANCE</div>
+        <div class="board-space"></div>
+        <div class="board-space corner-space"></div>
+        
+        <!-- Generated sentence container -->
+        <div class="generated-sentence-container" id="generatedSentenceContainer" style="display: none;">
+            <p id="generatedSentenceText" class="text-xl italic"></p>
+        </div>
+    </div>
+    
+    <div class="flex flex-wrap justify-center space-x-2 sm:space-x-4 mt-6 md:mt-8">
+        <button class="print-btn button-style" onclick="window.print()">
+            Print Board
+        </button>
+        <button class="save-btn button-style" onclick="saveAsImage()">
+            Save as Image
+        </button>
+        <button class="gemini-btn button-style" onclick="generateSentence()">
+            ✨ Generate Sentence
+        </button>
+        <button class="clear-btn button-style" onclick="clearSentences()">
+            Clear Sentences
+        </button>
+    </div>
+    
+    <div id="statusMessage" class="status-message"></div>
+
+    <script>
+        const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=';
+        const apiKey = "";
+        const generatedSentenceContainer = document.getElementById('generatedSentenceContainer');
+        const generatedSentenceText = document.getElementById('generatedSentenceText');
+        const generateBtn = document.querySelector('.gemini-btn');
+        const statusMessage = document.getElementById('statusMessage');
+
+        async function generateSentence() {
+            // Disable button and show loading text
+            generateBtn.disabled = true;
+            generateBtn.textContent = 'Generating...';
+            generatedSentenceContainer.style.display = 'flex';
+            generatedSentenceText.textContent = 'Please wait...';
+
+            const payload = {
+                contents: [{
+                    parts: [{
+                        text: "Provide one simple and direct sentence in direct speech format, suitable for a beginner English learner's game. Do not include any punctuation other than quotation marks and commas where necessary. The sentence should be short and easy to convert. For example: \"I like ice cream,\" he said. The new sentence should be completely different from the example."
+                    }]
+                }]
+            };
+
+            let response;
+            try {
+                response = await fetch(API_URL + apiKey, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const text = result.candidates[0].content.parts[0].text;
+                
+                // Update the text display
+                generatedSentenceText.textContent = text;
+
+            } catch (error) {
+                console.error('Error generating sentence:', error);
+                generatedSentenceText.textContent = 'Failed to generate sentence. Please try again.';
+            } finally {
+                // Re-enable the button
+                generateBtn.disabled = false;
+                generateBtn.textContent = '✨ Generate Sentence';
+            }
+        }
+
+        function clearSentences() {
+            generatedSentenceText.textContent = '';
+            generatedSentenceContainer.style.display = 'none';
+        }
+
+        function saveAsImage() {
+            const boardContainer = document.querySelector('.board-container');
+            
+            statusMessage.textContent = 'Preparing image...';
+            statusMessage.style.color = '#374151';
+
+            try {
+                html2canvas(boardContainer, {
+                    useCORS: true,
+                    scale: 2 // Use a higher scale for better image quality
+                }).then(canvas => {
+                    const dataURL = canvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    link.href = dataURL;
+                    link.download = 'reported-speech-rally-board.png';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    statusMessage.textContent = 'Image download should have started!';
+                    statusMessage.style.color = '#10b981';
+                }).catch(error => {
+                    console.error('Error saving image:', error);
+                    statusMessage.textContent = 'Unable to save image. Please use the print option instead.';
+                    statusMessage.style.color = '#ef4444';
+                });
+            } catch (e) {
+                console.error('Initial saveAsImage call failed:', e);
+                statusMessage.textContent = 'An unexpected error occurred. Please try again.';
+                statusMessage.style.color = '#ef4444';
+            }
+        }
+    </script>
+</body>
+</html>
