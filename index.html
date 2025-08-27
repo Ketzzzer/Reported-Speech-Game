@@ -120,6 +120,7 @@
             border: 4px dashed #374151;
             border-radius: 1rem;
             display: flex;
+            flex-direction: column; /* Changed to column to stack sentences */
             justify-content: center;
             align-items: center;
             text-align: center;
@@ -127,6 +128,19 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             font-size: 1.25rem;
             font-weight: 600;
+        }
+
+        .sentence-direct, .sentence-reported {
+            margin: 0.5rem 0;
+            font-size: 1.1rem; /* Slightly smaller for two lines */
+        }
+        .sentence-direct {
+            font-weight: bold;
+        }
+        .sentence-reported {
+            font-style: italic;
+            font-size: 0.95rem; /* Slightly smaller for the reported speech */
+            color: #4b5563;
         }
 
         .button-style {
@@ -181,7 +195,7 @@
                 display: none;
             }
             .board-container {
-                border: 2px solid black;
+                border: 1px solid black;
                 box-shadow: none;
             }
             .board-space {
@@ -224,7 +238,8 @@
         
         <!-- Generated sentence container -->
         <div class="generated-sentence-container" id="generatedSentenceContainer" style="display: none;">
-            <p id="generatedSentenceText" class="text-xl italic"></p>
+            <p id="directSpeechText" class="sentence-direct"></p>
+            <p id="reportedSpeechText" class="sentence-reported"></p>
         </div>
     </div>
     
@@ -247,35 +262,45 @@
 
     <script>
         const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=';
-        const apiKey = "AIzaSyB1Lf9m2250054ZPMY0074hXa4ET-RdTMk";
+        // --- IMPORTANT: Paste your own Google Gemini API key here ---
+        // You can get one from Google AI Studio: https://aistudio.google.com/
+        // It's a string that looks something like 'AIzaSyC...'
+        const apiKey = "AIzaSyB1Lf9m2250054ZPMY0074hXa4ET-RdTMk"; // <--- IMPORTANT: Replace this with your actual API key
+        
         const generatedSentenceContainer = document.getElementById('generatedSentenceContainer');
-        const generatedSentenceText = document.getElementById('generatedSentenceText');
+        const directSpeechText = document.getElementById('directSpeechText');
+        const reportedSpeechText = document.getElementById('reportedSpeechText');
         const generateBtn = document.querySelector('.gemini-btn');
         const statusMessage = document.getElementById('statusMessage');
 
-        // This function will automatically replace the placeholder with a real API key when you run the code in the immersive editor.
-        // It's a special function provided by the platform.
-        const getGeminiAPIKey = () => typeof __api_key !== 'undefined' ? __api_key : apiKey;
-
         async function generateSentence() {
+            // Check if the API key has been provided
+            if (apiKey === "") {
+                generatedSentenceContainer.style.display = 'flex';
+                directSpeechText.textContent = "Please add your Gemini API key to the code to enable this feature.";
+                reportedSpeechText.textContent = "";
+                return;
+            }
+
             // Disable button and show loading text
             generateBtn.disabled = true;
             generateBtn.textContent = 'Generating...';
             generatedSentenceContainer.style.display = 'flex';
-            generatedSentenceText.textContent = 'Please wait...';
+            directSpeechText.textContent = 'Please wait...';
+            reportedSpeechText.textContent = 'Generating reported speech...';
+
 
             const payload = {
                 contents: [{
                     parts: [{
-                        text: "Provide one simple and direct sentence in direct speech format, suitable for a beginner English learner's game. Do not include any punctuation other than quotation marks and commas where necessary. The sentence should be short and easy to convert. For example: \"I like ice cream,\" he said. The new sentence should be completely different from the example."
+                        text: "Generate exactly two lines of text. The first line must start with 'Direct Speech:' and contain ONLY a simple direct speech sentence (the quoted part, e.g., 'I don't see my uncle very often.'). The subject of the quoted speech MUST be either 1st person singular ('I') or 1st person plural ('we'). The content should reflect simple, everyday actions or preferences. The second line must start with 'Reported Speech:' and contain the correct reported speech conversion. This reported speech line MUST include a suitable reporting clause with a name or a 3rd person singular ('he'/'she') or 3rd person plural ('they') pronoun (e.g., 'John said that...', 'She said that...', 'They said that...') that matches the implied speaker of the direct quote. Pay close attention to pronoun and tense changes (or lack thereof for general truths/preferences). Use these examples:\nDirect Speech: 'I don't see my uncle very often.'\nReported Speech: John said that he didn't see his uncle very often.\nDirect Speech: 'I don't like pizza.'\nReported Speech: Lisa said that she doesn't like pizza.\nDirect Speech: 'We like listening to classical music.'\nReported Speech: Mark and Sarah said that they like listening to classical music.\n\nOnly provide these two lines, nothing more."
                     }]
                 }]
             };
 
             let response;
             try {
-                // Use the API key provided by the platform
-                response = await fetch(API_URL + getGeminiAPIKey(), {
+                response = await fetch(API_URL + apiKey, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -286,20 +311,89 @@
                 }
 
                 const result = await response.json();
-                const text = result.candidates[0].content.parts[0].text;
+                const fullText = result.candidates[0].content.parts[0].text;
                 
-                // Update the text display
-                generatedSentenceText.textContent = text;
+                // Parse the response to separate direct and reported speech
+                let directSentence = "";
+                let reportedSentence = "";
+
+                const lines = fullText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+
+                if (lines.length >= 2) {
+                    if (lines[0].startsWith("Direct Speech:")) {
+                        directSentence = lines[0].substring("Direct Speech:".length).trim();
+                    } else {
+                        directSentence = lines[0]; // Assume first line is direct if prefix is missing
+                    }
+
+                    if (lines[1].startsWith("Reported Speech:")) {
+                        reportedSentence = lines[1].substring("Reported Speech:".length).trim();
+                    } else {
+                        reportedSentence = lines[1]; // Assume second line is reported if prefix is missing
+                    }
+                }
+
+                if (directSentence && reportedSentence) {
+                    directSpeechText.textContent = `Direct Speech: ${directSentence}`;
+                    reportedSpeechText.textContent = `Reported Speech: ${reportedSentence}`;
+                } else {
+                    directSpeechText.textContent = "Could not parse sentence. Please try again.";
+                    reportedSpeechText.textContent = "API response format unexpected.";
+                    console.error("API response format unexpected:", fullText);
+                }
 
             } catch (error) {
                 console.error('Error generating sentence:', error);
-                generatedSentenceText.textContent = 'Failed to generate sentence. Please try again.';
+                directSpeechText.textContent = `Failed to generate sentence: ${error.message}.`;
+                reportedSpeechText.textContent = "Please check your API key and browser console for details.";
             } finally {
                 // Re-enable the button
                 generateBtn.disabled = false;
                 generateBtn.textContent = '✨ Generate Sentence';
             }
         }
+
+        function clearSentences() {
+            directSpeechText.textContent = '';
+            reportedSpeechText.textContent = '';
+            generatedSentenceContainer.style.display = 'none';
+        }
+
+        function saveAsImage() {
+            const boardContainer = document.querySelector('.board-container');
+            
+            statusMessage.textContent = 'Preparing image...';
+            statusMessage.style.color = '#374151';
+
+            try {
+                html2canvas(boardContainer, {
+                    useCORS: true,
+                    scale: 2 // Use a higher scale for better image quality
+                }).then(canvas => {
+                    const dataURL = canvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    link.href = dataURL;
+                    link.download = 'reported-speech-rally-board.png';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    statusMessage.textContent = 'Image download should have started!';
+                    statusMessage.style.color = '#10b981';
+                }).catch(error => {
+                    console.error('Error saving image:', error);
+                    statusMessage.textContent = 'Unable to save image. Please use the print option instead.';
+                    statusMessage.style.color = '#ef4444';
+                });
+            } catch (e) {
+                console.error('Initial saveAsImage call failed:', e);
+                statusMessage.textContent = 'An unexpected error occurred. Please try again.';
+                statusMessage.style.color = '#ef4444';
+            }
+        }
+    </script>
+</body>
+</html>
 
         function clearSentences() {
             generatedSentenceText.textContent = '';
@@ -341,5 +435,6 @@
     </script>
 </body>
 </html>
+
 
 
