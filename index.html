@@ -262,11 +262,7 @@
 
     <script>
         const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=';
-        // --- IMPORTANT: Paste your OWN Google Gemini API key here ---
-        // You can get one from Google AI Studio: https://aistudio.google.com/
-        // It's a string that looks something like 'AIzaSyC...'
-        const apiKey = "AIzaSyB1Lf9m2250054ZPMY0074hXa4ET-RdTMk"; // <--- !!! REPLACE THIS EMPTY STRING WITH YOUR API KEY !!!
-        
+        const apiKey = "AIzaSyB1Lf9m2250054ZPMY0074hXa4ET-RdTMk"; 
         const generatedSentenceContainer = document.getElementById('generatedSentenceContainer');
         const directSpeechText = document.getElementById('directSpeechText');
         const reportedSpeechText = document.getElementById('reportedSpeechText');
@@ -274,11 +270,10 @@
         const statusMessage = document.getElementById('statusMessage');
 
         async function generateSentence() {
-            // Check if the API key has been provided
             if (apiKey === "AIzaSyB1Lf9m2250054ZPMY0074hXa4ET-RdTMk") {
                 generatedSentenceContainer.style.display = 'flex';
                 directSpeechText.textContent = "Error: Gemini API key is missing.";
-                reportedSpeechText.textContent = "Please update the 'apiKey' variable in the code with your personal key from Google AI Studio.";
+                reportedSpeechText.textContent = "Please update the 'AIzaSyB1Lf9m2250054ZPMY0074hXa4ET-RdTMk' variable in the code with your personal key from Google AI Studio.";
                 console.error("Gemini API key is missing. Please update the 'apiKey' variable in the code.");
                 return;
             }
@@ -414,3 +409,4 @@
     </script>
 </body>
 </html>
+
