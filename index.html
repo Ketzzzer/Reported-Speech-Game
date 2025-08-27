@@ -261,11 +261,11 @@
     <div id="statusMessage" class="status-message"></div>
 
     <script>
-        const API_URL = 'AIzaSyB1Lf9m2250054ZPMY0074hXa4ET-RdTMk';
-        // --- IMPORTANT: Paste your own Google Gemini API key here ---
+        const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=';
+        // --- IMPORTANT: Paste your OWN Google Gemini API key here ---
         // You can get one from Google AI Studio: https://aistudio.google.com/
         // It's a string that looks something like 'AIzaSyC...'
-        const apiKey = "AIzaSyB1Lf9m2250054ZPMY0074hXa4ET-RdTMk"; // <--- IMPORTANT: Replace this with your actual API key
+        const apiKey = "AIzaSyB1Lf9m2250054ZPMY0074hXa4ET-RdTMk"; // <--- !!! REPLACE THIS EMPTY STRING WITH YOUR API KEY !!!
         
         const generatedSentenceContainer = document.getElementById('generatedSentenceContainer');
         const directSpeechText = document.getElementById('directSpeechText');
@@ -277,8 +277,9 @@
             // Check if the API key has been provided
             if (apiKey === "AIzaSyB1Lf9m2250054ZPMY0074hXa4ET-RdTMk") {
                 generatedSentenceContainer.style.display = 'flex';
-                directSpeechText.textContent = "Please add your Gemini API key to the code to enable this feature.";
-                reportedSpeechText.textContent = "";
+                directSpeechText.textContent = "Error: Gemini API key is missing.";
+                reportedSpeechText.textContent = "Please update the 'apiKey' variable in the code with your personal key from Google AI Studio.";
+                console.error("Gemini API key is missing. Please update the 'apiKey' variable in the code.");
                 return;
             }
 
@@ -300,14 +301,33 @@
 
             let response;
             try {
-                response = await fetch(API_URL + apiKey, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                // Implement exponential backoff for API calls
+                let retryCount = 0;
+                const maxRetries = 5;
+                let delay = 1000; // 1 second
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                while (retryCount < maxRetries) {
+                    response = await fetch(API_URL + apiKey, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        break; // Success! Exit loop
+                    } else if (response.status === 429 || response.status >= 500) { // Too Many Requests or Server Error
+                        console.warn(`API call failed with status ${response.status}. Retrying in ${delay / 1000} seconds...`);
+                        await new Promise(res => setTimeout(res, delay));
+                        delay *= 2; // Double the delay for next retry
+                        retryCount++;
+                    } else {
+                        // Other non-retryable errors
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                }
+
+                if (!response.ok) { // If still not ok after retries
+                    throw new Error(`API call failed after ${maxRetries} retries with status: ${response.status}`);
                 }
 
                 const result = await response.json();
@@ -337,15 +357,15 @@
                     directSpeechText.textContent = `Direct Speech: ${directSentence}`;
                     reportedSpeechText.textContent = `Reported Speech: ${reportedSentence}`;
                 } else {
-                    directSpeechText.textContent = "Could not parse sentence. Please try again.";
-                    reportedSpeechText.textContent = "API response format unexpected.";
+                    directSpeechText.textContent = "Error: Could not parse generated sentence. Unexpected format.";
+                    reportedSpeechText.textContent = `Raw response: "${fullText}". Please try again.`;
                     console.error("API response format unexpected:", fullText);
                 }
 
             } catch (error) {
                 console.error('Error generating sentence:', error);
-                directSpeechText.textContent = `Failed to generate sentence: ${error.message}.`;
-                reportedSpeechText.textContent = "Please check your API key and browser console for details.";
+                directSpeechText.textContent = `Error generating sentence: ${error.message}.`;
+                reportedSpeechText.textContent = "Please ensure your API key is correct and check the browser console for more details.";
             } finally {
                 // Re-enable the button
                 generateBtn.disabled = false;
@@ -394,6 +414,3 @@
     </script>
 </body>
 </html>
-
-
-
