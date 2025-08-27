@@ -253,6 +253,10 @@
         const generateBtn = document.querySelector('.gemini-btn');
         const statusMessage = document.getElementById('statusMessage');
 
+        // This function will automatically replace the placeholder with a real API key when you run the code in the immersive editor.
+        // It's a special function provided by the platform.
+        const getGeminiAPIKey = () => typeof __api_key !== 'undefined' ? __api_key : apiKey;
+
         async function generateSentence() {
             // Disable button and show loading text
             generateBtn.disabled = true;
@@ -270,7 +274,8 @@
 
             let response;
             try {
-                response = await fetch(API_URL + apiKey, {
+                // Use the API key provided by the platform
+                response = await fetch(API_URL + getGeminiAPIKey(), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
